@@ -9,6 +9,9 @@ provider:
   name: aws
   runtime: nodejs12.x
   region: eu-west-1
+  environment:
+    PRODUCT_TABLE: Product
+    STOCK_TABLE: Stocks
 
 functions:
   productsList:
@@ -22,9 +25,19 @@ functions:
     handler: productsById.getProductsById
     events:
       - http:
-          path: products/{productId}
+          path: product/{productId}
           method: get
           cors: true
+  createProduct: 
+    handler: createProduct.createProduct
+    events:
+      - http:
+          path: products
+          method: post
+          cors: true
+
+  fillMockData:
+    handler: mocks/dynamo-script-js-file.fillMockData
 
 custom:
   client:
