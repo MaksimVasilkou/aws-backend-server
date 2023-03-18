@@ -12,6 +12,28 @@ provider:
   environment:
     PRODUCT_TABLE: Product
     STOCK_TABLE: Stocks
+    SQS_URL: 
+      Ref: SQSQueue 
+    SNS_URL: 
+      Ref: SNSTopick
+
+  
+  iamRoleStatements: 
+    - Effect: "Allow"
+      Action: "sqs:*"
+      Resource: 
+        - Fn::GetAtt: [ SQSQueue, Arn ]
+    
+    - Effect: "Allow"
+      Action: "dynamodb:*"
+      Resource:
+        - arn:aws:dynamodb:eu-west-1:908587837201:table/Product
+        - arn:aws:dynamodb:eu-west-1:908587837201:table/Stocks
+    
+    - Effect: "Allow"
+      Action: "sns:*"
+      Resource: 
+        Ref: SNSTopick
 
 functions:
   productsList:
@@ -35,6 +57,15 @@ functions:
           path: products
           method: post
           cors: true
+  catalogBatchProcess: 
+    handler: queueHandler.catalogBatchProcess
+    events: 
+      - sqs: 
+          batchSize: 5
+          arn:
+            Fn::GetAtt: 
+              - SQSQueue
+              - Arn
 
   fillMockData:
     handler: mocks/dynamo-script-js-file.fillMockData
@@ -50,6 +81,25 @@ custom:
 
 resources:
   Resources:
+    SQSQueue:
+      Type: AWS::SQS::Queue
+      Properties: 
+        QueueName: catalogItemsQueue
+    SNSTopick:
+      Type: AWS::SNS::Topic
+      Properties: 
+        TopicName: createProductTopic
+    SNSSubscription:
+      Type: AWS::SNS::Subscription
+      Properties:
+        Endpoint: Maksim_Vasilkou@epam.com
+        Protocol: email
+        TopicArn: 
+          Ref: SNSTopick
+        FilterPolicy: {
+          "numberCounter": [{"numeric": ["<", 10]}]
+        }
+
     ## Specifying the S3 Bucket
     WebAppS3Bucket:
       Type: AWS::S3::Bucket

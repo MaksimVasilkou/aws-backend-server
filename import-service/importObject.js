@@ -52,6 +52,7 @@ export const importFileParser = async (event, context, callback) => {
     const s3 = new AWS.S3();
     const BucketName = 'import-cars-bucket';
     const { Records } = event;
+    const sqs = new AWS.SQS();
     for (const record of Records) {
       const objectName = record.s3.object.key;
       const params = {
@@ -65,14 +66,19 @@ export const importFileParser = async (event, context, callback) => {
         readStream
           .pipe(csvParser())
           .on('data', (data) => {
-            console.log('Data recieved successfuly, data = ', data);
+            sqs.sendMessage({
+              QueueUrl: process.env.SQS_URL,
+              MessageBody: JSON.stringify(data)
+            }, (error, data) => {
+              console.log('ERROR from SQS, ERROR', error);
+              console.log('Data from SQS, DATA', data);
+            })
+
           })
           .on('error', (error) => {
-            console.log(`Error getObject execution, `, error);
             reject(error);
           })
           .on('end', async (end) => {
-            console.log(`end execution, event = `, end);
             await s3
               .copyObject({
                 Bucket: BucketName,
