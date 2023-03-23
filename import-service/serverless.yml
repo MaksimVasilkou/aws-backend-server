@@ -8,6 +8,8 @@ provider:
   name: aws
   runtime: nodejs12.x
   region: eu-west-1
+  environment:
+    SQS_URL: https://sqs.eu-west-1.amazonaws.com/908587837201/catalogItemsQueue
 
   iamRoleStatements: 
     - Effect: "Allow"
@@ -19,6 +21,10 @@ provider:
       - "s3:*"
       Resource: 
       - "arn:aws:s3:::import-cars-bucket/*"
+    - Effect: "Allow"
+      Action: "sqs:*"
+      Resource: 
+        - arn:aws:sqs:eu-west-1:908587837201:catalogItemsQueue
 
 functions:
   importProductsFile:
